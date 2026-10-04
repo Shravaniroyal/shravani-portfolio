@@ -1,0 +1,14 @@
+/* Append to your existing stylesheet. Inherits your colors; only layout added. */
+.detail { max-width: 760px; margin: 0 auto; padding-top: 6rem; }
+.detail-back { display: inline-block; margin-bottom: 1.5rem; text-decoration: none; opacity: .8; }
+.detail-back:hover { opacity: 1; }
+.detail-title { font-size: clamp(2rem, 5vw, 3rem); margin: 0 0 .25rem; }
+.detail-chips { margin: 1rem 0 2rem; }
+.detail-h { margin: 2.25rem 0 .75rem; font-size: 1.25rem; }
+.detail-list { padding-left: 1.2rem; display: grid; gap: .6rem; }
+.detail-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 0; }
+.detail-result { border-left: 2px solid currentColor; padding-left: .8rem; }
+.detail-result dd { margin: 0; font-size: 1.4rem; font-weight: 600; }
+.detail-result dt { margin-top: .15rem; font-size: .85rem; }
+.project-links { display: flex; gap: 1rem; flex-wrap: wrap; }
+.detail a:focus-visible, .project-links a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chat Logs — Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body{ font-family: system-ui, sans-serif; background:#0e1024; color:#f2f1ff; margin:0; padding:24px; }
+  h1{ font-size:22px; margin-bottom:4px; }
+  .sub{ color:#9a9ac0; font-size:14px; margin-bottom:20px; }
+  .gate{ max-width:360px; margin:80px auto; text-align:center; }
+  .gate input{ width:100%; padding:10px; border-radius:8px; border:1px solid #333; background:#171a36; color:#fff; margin:10px 0; box-sizing:border-box; }
+  .gate button{ padding:10px 20px; border-radius:8px; border:none; background:#ffb648; font-weight:600; cursor:pointer; }
+  .tabs{ display:flex; gap:8px; margin-bottom:16px; }
+  .tabs button{ background:#171a36; color:#f2f1ff; border:1px solid #2a2e52; padding:8px 14px; border-radius:8px; cursor:pointer; }
+  .tabs button.active{ background:#ffb648; color:#241804; border-color:#ffb648; }
+  .card{ background:#171a36; border:1px solid #2a2e52; border-radius:12px; padding:16px; margin-bottom:14px; }
+  .meta{ font-size:12px; color:#9a9ac0; margin-bottom:10px; }
+  .turn{ margin:8px 0; padding:8px 12px; border-radius:8px; background:#1e2247; }
+  .turn b{ color:#ffb648; }
+  .lead{ display:flex; gap:16px; flex-wrap:wrap; }
+  .lead div{ font-size:14px; }
+  .empty{ color:#9a9ac0; text-align:center; padding:40px; }
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <h1>🔒 Admin Login</h1>
+  <p class="sub">Enter your admin passcode from server/.env</p>
+  <input id="keyInput" type="password" placeholder="Admin passcode" />
+  <br>
+  <button onclick="unlock()">View Logs</button>
+</div>
+
+<div id="dashboard" style="display:none; max-width:800px; margin:0 auto;">
+  <h1>Chat Logs</h1>
+  <p class="sub">Everything visitors have asked your AI avatar, and everyone who wants to be contacted.</p>
+  <div class="tabs">
+    <button id="tabConvos" class="active" onclick="showTab('convos')">Conversations</button>
+    <button id="tabLeads" onclick="showTab('leads')">Contact Leads</button>
+  </div>
+  <div id="convosView"></div>
+  <div id="leadsView" style="display:none;"></div>
+</div>
+
+<script>
+let adminKey = "";
+
+function unlock(){
+  adminKey = document.getElementById('keyInput').value.trim();
+  if (!adminKey) return;
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  loadConversations();
+  loadLeads();
+}
+
+function showTab(which){
+  document.getElementById('tabConvos').classList.toggle('active', which === 'convos');
+  document.getElementById('tabLeads').classList.toggle('active', which === 'leads');
+  document.getElementById('convosView').style.display = which === 'convos' ? 'block' : 'none';
+  document.getElementById('leadsView').style.display = which === 'leads' ? 'block' : 'none';
+}
+
+async function loadConversations(){
+  const el = document.getElementById('convosView');
+  try {
+    const res = await fetch('/api/admin/conversations?key=' + encodeURIComponent(adminKey));
+    if (!res.ok) throw new Error('Unauthorized or server error');
+    const data = await res.json();
+    if (!data.length){ el.innerHTML = '<div class="empty">No conversations yet.</div>'; return; }
+    el.innerHTML = data.map(convo => `
+      <div class="card">
+        <div class="meta">Session ${convo.sessionId} · ${convo.turnCount} messages · last active ${new Date(convo.lastMessageAt).toLocaleString()}</div>
+        ${convo.turns.map(t => `
+          <div class="turn"><b>Visitor:</b> ${escapeHtml(t.visitorMessage)}</div>
+          <div class="turn"><b>Bot:</b> ${escapeHtml(t.botReply)}</div>
+        `).join('')}
+      </div>
+    `).join('');
+  } catch(e){
+    el.innerHTML = '<div class="empty">Could not load conversations — check your passcode.</div>';
+  }
+}
+
+async function loadLeads(){
+  const el = document.getElementById('leadsView');
+  try {
+    const res = await fetch('/api/admin/leads?key=' + encodeURIComponent(adminKey));
+    if (!res.ok) throw new Error('Unauthorized or server error');
+    const data = await res.json();
+    if (!data.length){ el.innerHTML = '<div class="empty">No contact requests yet.</div>'; return; }
+    el.innerHTML = data.map(lead => `
+      <div class="card">
+        <div class="meta">${new Date(lead.ts).toLocaleString()}</div>
+        <div class="lead">
+          <div><b>Name:</b> ${escapeHtml(lead.name)}</div>
+          <div><b>Email:</b> ${escapeHtml(lead.email)}</div>
+        </div>
+        <div class="turn">${escapeHtml(lead.context || '(no context)')}</div>
+      </div>
+    `).join('');
+  } catch(e){
+    el.innerHTML = '<div class="empty">Could not load leads — check your passcode.</div>';
+  }
+}
+
+function escapeHtml(s){
+  return (s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+document.getElementById('keyInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') unlock(); });
+</script>
+</body>
+</html>
