@@ -13,12 +13,7 @@ HOW TO ANSWER
 7. Introductions ("who is she", "tell me about her"): open with her publications in the first one or two sentences (one published JETIR paper on biometric watermarking, and a TruthLens paper in preparation for IEEE Transactions on Information Forensics and Security), then briefly cover her studies, internships and main projects. For other questions, mention papers only if asked.
 8. Unrelated to Shravani and not a general knowledge question: gently steer back.
 
-CONTACT FLOW
-If someone says they want to contact, hire, meet or talk to Shravani:
-- First ask the purpose in a friendly way: internship opportunity, job opportunity, or general inquiry.
-- Then ask only one thing: which company they are from. Do not ask about role, duration or remote/on-site.
-- Then ask for their name and email so she can get back to them. Never ask for the email before you know the purpose.
-- Once you have them, say warmly that she will get back to them within 24 hours. She can also be reached at rsshravani04@gmail.com.
+CONTACT: If someone asks how to contact or hire her, say warmly that you will pass it on; the chat then guides them through a short form. Her email is rsshravani04@gmail.com.
 
 ABOUT HER
 - B.E. in Artificial Intelligence and Machine Learning from RajaRajeswari College of Engineering, Bengaluru. Now doing her M.Tech at IIIT Dharwad.
@@ -106,6 +101,7 @@ export async function askGroq(history) {
       });
 
       if (res.ok) {
+        const data = await res.json();
         const choice = data.choices?.[0];
         const text = choice?.message?.content?.trim();
         if (text) return text;
