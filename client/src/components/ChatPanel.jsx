@@ -1,49 +1,58 @@
 import React, { useEffect, useRef, useState } from "react";
 
-const CONTACT_EMAIL = "rsshravani04@gmail.com";
-
+const API = import.meta.env.VITE_API_URL || "";
 const CONTACT_RE =
   /\b(talk to (your )?(owner|creator|her)|contact (you|her)|reach (you|her)|get (her |you )?in touch|in touch with (her|you)|(how|can|could) (do |can |could |to )?(i|we) (contact|reach|message|email|meet|talk to)|connect with (you|her)|hire (her|you)|speak (to|with) (her|you)|email her|her email|her contact)\b/i;
 const BYE_RE =
   /\b(bye|goodbye|see you|see ya|gotta go|have to go|that'?s all|that is all|thanks a lot|thank you so much|thanks,? bye|ok thanks|okay thanks|thank you)\b/i;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 // "why should we hire her?" is a question to answer, not a request to contact her
 const WHY_RE = /\b(why|should|reasons?|worth|good fit|what makes)\b/i;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const CANCEL_RE = /^(skip|cancel|no|nope|nah|never ?mind|stop|not now)\.?$/i;
-
 function wantsContact(text) {
   return CONTACT_RE.test(text) && !WHY_RE.test(text);
+}
+
+function guessPurpose(text) {
+  if (/intern/i.test(text)) return "Internship opportunity";
+  if (/job|hire|hiring|full.?time|role|position|opening/i.test(text)) return "Job opportunity";
+  return "General inquiry";
 }
 
 function makeSessionId() {
   return "s_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+const PURPOSES = ["Internship opportunity", "Job opportunity", "General inquiry"];
+
 export default function ChatPanel({ onFarewellTriggered, onGreetShown }) {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
       content:
-        "Hi! I'm Shravani's AI twin \u{1F44B} Ask me anything about her \u2014 or even who built me \u{1F440}",
+        "Hi! I'm Shravani's AI twin 👋 Ask me anything about her — or even who built me 👀",
     },
   ]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const [stage, setStage] = useState("chat"); // chat | ask_name | ask_email
+  // chat | ask_purpose | ask_company | ask_name | ask_email
+  const [stage, setStage] = useState("chat");
+  const [purpose, setPurpose] = useState("");
+  const [company, setCompany] = useState("");
   const [leadName, setLeadName] = useState("");
   const sessionId = useRef(makeSessionId());
   const scrollRef = useRef(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [messages]);
+  }, [messages, stage]);
 
-  function botSay(content) {
+  function addBot(content) {
     setMessages((m) => [...m, { role: "assistant", content }]);
   }
 
-  async function callChat(history) {
-    const res = await fetch("/api/chat", {
+  async function callChatOnce(history) {
+    const res = await fetch(`${API}/api/chat`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ history, sessionId: sessionId.current }),
@@ -53,28 +62,56 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown }) {
     return data.reply;
   }
 
+  // retry once so a one-off first-request failure doesn't show the glitch message
+  async function callChat(history) {
+    try {
+      return await callChatOnce(history);
+    } catch {
+      await new Promise((r) => setTimeout(r, 800));
+      return await callChatOnce(history);
+    }
+  }
+
   async function sendLead(name, email) {
-    const context = messages
+    const chatContext = messages
       .slice(-8)
       .map((m) => (m.role === "user" ? "Visitor: " : "Bot: ") + m.content)
       .join("\n");
+    const context =
+      `Purpose: ${purpose}\nCompany: ${company}\n\nRecent chat:\n` + chatContext;
     try {
-      await fetch("/api/lead", {
+      await fetch(`${API}/api/lead`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ sessionId: sessionId.current, name, email, context }),
+        body: JSON.stringify({
+          sessionId: sessionId.current,
+          name,
+          email,
+          purpose,
+          company,
+          context,
+        }),
       });
     } catch {
       // still tell the visitor it's handled; the server logs it either way
     }
   }
 
-  function cancelLead() {
-    setStage("chat");
-    setLeadName("");
-    botSay(
-      `No problem! You can also email her directly at ${CONTACT_EMAIL}. Anything else you want to know?`
+  function startContactFlow() {
+    setStage("ask_purpose");
+    addBot(
+      "Say no more, I'll let her know! 🙌 What's the purpose of reaching out? Pick one below."
     );
+  }
+
+  function choosePurpose(label) {
+    setPurpose(label);
+    setStage("ask_company");
+    setMessages((m) => [
+      ...m,
+      { role: "user", content: label },
+      { role: "assistant", content: "Great! Which company are you from?" },
+    ]);
   }
 
   async function handleSend(e) {
@@ -82,48 +119,74 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown }) {
     const text = input.trim();
     if (!text || busy) return;
     setInput("");
+
+    // ----- contact flow stages -----
+    if (stage === "ask_purpose") {
+      choosePurpose(guessPurpose(text));
+      return;
+    }
+    if (stage === "ask_company") {
+      setCompany(text);
+      setStage("ask_name");
+      setMessages((m) => [
+        ...m,
+        { role: "user", content: text },
+        { role: "assistant", content: "Got it! And what's your name?" },
+      ]);
+      return;
+    }
+    if (stage === "ask_name") {
+      setLeadName(text);
+      setStage("ask_email");
+      setMessages((m) => [
+        ...m,
+        { role: "user", content: text },
+        {
+          role: "assistant",
+          content: `Nice to meet you, ${text}! What's the best email for her to reach you at?`,
+        },
+      ]);
+      return;
+    }
+    if (stage === "ask_email") {
+      setMessages((m) => [...m, { role: "user", content: text }]);
+      if (!EMAIL_RE.test(text)) {
+        addBot("Hmm, that email doesn't look right. Could you type it again?");
+        return;
+      }
+      setStage("chat");
+      addBot("Perfect, sending that over now... 📬");
+      await sendLead(leadName, text);
+      addBot(
+        "Done! Your message has been sent, and Shravani will contact you within 24 hours. Anything else you want to know?"
+      );
+      return;
+    }
+
+    // ----- normal chat -----
     const userMsg = { role: "user", content: text };
     const nextMessages = [...messages, userMsg];
     setMessages(nextMessages);
 
-    if (stage === "ask_name") {
-      if (CANCEL_RE.test(text)) return cancelLead();
-      setLeadName(text);
-      setStage("ask_email");
-      botSay(`Nice to meet you, ${text}! What's the best email for her to reach you at?`);
-      return;
-    }
-
-    if (stage === "ask_email") {
-      if (CANCEL_RE.test(text)) return cancelLead();
-      if (!EMAIL_RE.test(text)) {
-        botSay('That doesn\'t look like an email address. Try something like name@example.com, or say "skip" to cancel.');
-        return;
-      }
-      setStage("chat");
-      botSay("Perfect, sending that over now... \u{1F4EC}");
-      await sendLead(leadName, text);
-      botSay("Done! She'll reach out to you soon. Anything else you want to know?");
+    if (wantsContact(text)) {
+      startContactFlow();
       return;
     }
 
     setBusy(true);
     try {
-      const reply = await callChat(nextMessages.map((m) => ({ role: m.role, content: m.content })));
-      botSay(reply);
-
-      if (wantsContact(text)) {
-        setStage("ask_name");
-        setTimeout(() => {
-          botSay(
-            `You can email her directly at ${CONTACT_EMAIL}, or I can pass your details along. What's your name? (Say "skip" to cancel.)`
-          );
-        }, 400);
-      } else if (BYE_RE.test(text)) {
+      const reply = await callChat(
+        nextMessages.map((m) => ({ role: m.role, content: m.content }))
+      );
+      setMessages((m) => [...m, { role: "assistant", content: reply }]);
+      if (BYE_RE.test(text)) {
         onFarewellTriggered && onFarewellTriggered();
       }
     } catch {
-      botSay("Hmm, I glitched for a sec \u2014 mind asking that again?");
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", content: "Hmm, I glitched for a sec — mind asking that again?" },
+      ]);
     } finally {
       setBusy(false);
     }
@@ -137,6 +200,30 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown }) {
             <div className="bubble">{m.content}</div>
           </div>
         ))}
+        {stage === "ask_purpose" && (
+          <div className="row bot">
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {PURPOSES.map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => choosePurpose(p)}
+                  style={{
+                    background: "#ccff5c",
+                    color: "#0b0d17",
+                    border: "2px solid #0b0d17",
+                    borderRadius: 999,
+                    padding: "8px 14px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                  }}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {busy && (
           <div className="row bot">
             <div className="bubble typing">
@@ -149,7 +236,15 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown }) {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask away..."
+          placeholder={
+            stage === "ask_company"
+              ? "Company name..."
+              : stage === "ask_name"
+              ? "Your name..."
+              : stage === "ask_email"
+              ? "Your email..."
+              : "Ask away..."
+          }
           autoComplete="off"
         />
         <button type="submit" disabled={busy}>Send</button>

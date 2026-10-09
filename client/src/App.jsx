@@ -1,8 +1,7 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
-import NeuralBG from "./components/NeuralBG.jsx";
 import Nav from "./components/Nav.jsx";
-import ChatWidget from "./components/ChatWidget.jsx";
+import ChatPanel from "./components/ChatPanel.jsx";
 import Home from "./pages/Home.jsx";
 import ProjectDetail from "./pages/ProjectDetail.jsx";
 
@@ -22,17 +21,33 @@ function ScrollToHash() {
 }
 
 export default function App() {
+  const [open, setOpen] = useState(false); // chat drawer on phones
+
   return (
     <div className="page">
-      <NeuralBG />
-      <Nav />
-      <ScrollToHash />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/projects/:slug" element={<ProjectDetail />} />
-        <Route path="*" element={<Home />} />
-      </Routes>
-      <ChatWidget />
+      <div className="layout">
+        <div className="content">
+          <Nav />
+          <ScrollToHash />
+          <Routes>
+            <Route path="/" element={<Home onOpenChat={() => setOpen(true)} />} />
+            <Route path="/projects/:slug" element={<ProjectDetail />} />
+            <Route path="*" element={<Home onOpenChat={() => setOpen(true)} />} />
+          </Routes>
+        </div>
+        <aside className={`side ${open ? "open" : ""}`}>
+          <div className="chat-shell">
+            <header className="chat-head">
+              <span><i className="dot" />Chat with Shravani's AI twin</span>
+              <button className="chat-close" onClick={() => setOpen(false)} aria-label="Close chat">✕</button>
+            </header>
+            <div className="chat-body">
+              <ChatPanel />
+            </div>
+          </div>
+        </aside>
+      </div>
+      <button className="fab" onClick={() => setOpen(true)} aria-label="Open chat">💬</button>
     </div>
   );
 }
