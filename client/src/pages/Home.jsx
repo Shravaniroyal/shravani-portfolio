@@ -41,7 +41,7 @@ function count(el) {
   })(t0);
 }
 
-export default function Home({ onOpenChat }) {
+export default function Home({ onOpenChat, onSayHi }) {
   const [scene, setScene] = useState(0);
   const [paused, setPaused] = useState(false);
 
@@ -91,7 +91,7 @@ export default function Home({ onOpenChat }) {
           </p>
           <div className="hero-actions">
             <a href="#projects" className="btn btn-primary">See my work</a>
-            <a href="#contact" className="btn btn-ghost">Say hi</a>
+            <button type="button" className="btn btn-ghost" onClick={onSayHi}>Say hi</button>
           </div>
         </div>
         <div className="art" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
@@ -192,7 +192,11 @@ export default function Home({ onOpenChat }) {
       <section className="cta rv" id="contact">
         <div className="script cta-title">Let's build something <span className="hot">together!</span></div>
         <p className="prose" style={{ margin: "8px auto 18px" }}>
-          Internship, job or just a hello? Use the chat on the side, or reach out directly.
+          Internship, job or just a hello? Reach out directly, or just chat with my AI twin on the side.
+        </p>
+        <p className="prose" style={{ margin: "0 auto 18px" }}>
+          💬 You can also contact me through the chat: tell it "connect me with her", answer a few quick questions,
+          and it emails me your details so I can contact you back within 24 hours.
         </p>
         <div className="contact-links">
           <a href="mailto:rsshravani04@gmail.com">rsshravani04@gmail.com</a>

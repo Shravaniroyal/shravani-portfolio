@@ -22,6 +22,11 @@ function ScrollToHash() {
 
 export default function App() {
   const [open, setOpen] = useState(false); // chat drawer on phones
+  const [incoming, setIncoming] = useState(null); // message pushed into the chat from the page
+  const sayHi = () => {
+    setOpen(true);
+    setIncoming({ id: Date.now(), text: "Hi! 👋" });
+  };
 
   return (
     <div className="page">
@@ -30,9 +35,9 @@ export default function App() {
           <Nav />
           <ScrollToHash />
           <Routes>
-            <Route path="/" element={<Home onOpenChat={() => setOpen(true)} />} />
+            <Route path="/" element={<Home onOpenChat={() => setOpen(true)} onSayHi={sayHi} />} />
             <Route path="/projects/:slug" element={<ProjectDetail />} />
-            <Route path="*" element={<Home onOpenChat={() => setOpen(true)} />} />
+            <Route path="*" element={<Home onOpenChat={() => setOpen(true)} onSayHi={sayHi} />} />
           </Routes>
         </div>
         <aside className={`side ${open ? "open" : ""}`}>
@@ -42,7 +47,7 @@ export default function App() {
               <button className="chat-close" onClick={() => setOpen(false)} aria-label="Close chat">✕</button>
             </header>
             <div className="chat-body">
-              <ChatPanel />
+              <ChatPanel incoming={incoming} />
             </div>
           </div>
         </aside>

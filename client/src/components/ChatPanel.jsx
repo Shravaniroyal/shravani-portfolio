@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 
 const API = import.meta.env.VITE_API_URL || "";
 const CONTACT_RE =
-  /\b(talk to (your )?(owner|creator|her)|contact (you|her)|reach (you|her)|get (her |you )?in touch|in touch with (her|you)|(how|can|could) (do |can |could |to )?(i|we) (contact|reach|message|email|meet|talk to)|connect with (you|her)|hire (her|you)|speak (to|with) (her|you)|email her|her email|her contact)\b/i;
+  /\b(talk to (your )?(owner|creator|her)|contact (you|her)|reach (you|her)|get (her |you )?in touch|in touch with (her|you)|(how|can|could) (do |can |could |to )?(i|we) (contact|reach|message|email|meet|talk to)|connect (me )?(with|to) (you|her)|hire (her|you)|speak (to|with) (her|you)|email her|her email|her contact)\b/i;
 const BYE_RE =
   /\b(bye|goodbye|see you|see ya|gotta go|have to go|that'?s all|that is all|thanks a lot|thank you so much|thanks,? bye|ok thanks|okay thanks|thank you)\b/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -25,12 +25,12 @@ function makeSessionId() {
 
 const PURPOSES = ["Internship opportunity", "Job opportunity", "General inquiry"];
 
-export default function ChatPanel({ onFarewellTriggered, onGreetShown }) {
+export default function ChatPanel({ onFarewellTriggered, onGreetShown, incoming }) {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
       content:
-        "Hi! I'm Shravani's AI twin 👋 Ask me anything about her — or even who built me 👀",
+        "Hi! I'm Shravani's AI twin 👋 Ask me anything about her — or even who built me 👀 You can also say \"connect me with her\" right here, and I'll pass your details to her so she can contact you back.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -114,11 +114,15 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown }) {
     ]);
   }
 
-  async function handleSend(e) {
+  function handleSend(e) {
     e.preventDefault();
     const text = input.trim();
     if (!text || busy) return;
     setInput("");
+    send(text);
+  }
+
+  async function send(text) {
 
     // ----- contact flow stages -----
     if (stage === "ask_purpose") {
@@ -191,6 +195,18 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown }) {
       setBusy(false);
     }
   }
+
+  // Messages sent from outside (e.g. the "Say hi" button) arrive as `incoming`.
+  // The ref always points at the latest send(), so it never uses stale state.
+  const sendRef = useRef(send);
+  sendRef.current = send;
+  const lastIncoming = useRef(null);
+  useEffect(() => {
+    if (!incoming || incoming.id === lastIncoming.current) return;
+    lastIncoming.current = incoming.id;
+    if (busy || stage !== "chat") return;
+    sendRef.current(incoming.text);
+  }, [incoming]);
 
   return (
     <div className="chat-panel">
