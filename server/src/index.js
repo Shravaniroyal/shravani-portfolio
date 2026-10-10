@@ -66,22 +66,29 @@ app.post("/api/chat", async (req, res) => {
 // --- Lead endpoint ---
 app.post("/api/lead", async (req, res) => {
   try {
-    const { sessionId, name, email, context, purpose, company } = req.body;
-    if (!name || !email) {
-      return res.status(400).json({ error: "name and email are required" });
+    const { sessionId, name, email, linkedin, context, purpose, company } = req.body;
+    if (!name || (!email && !linkedin)) {
+      return res.status(400).json({ error: "name and an email or LinkedIn link are required" });
     }
-    // Keep purpose and company in the saved lead and the email
+    // Keep purpose, company and LinkedIn in the saved lead and the email
     const fullContext = [
       purpose ? `Purpose: ${purpose}` : "",
       company ? `Company: ${company}` : "",
+      linkedin ? `LinkedIn: ${linkedin}` : "",
       context || "",
     ]
       .filter(Boolean)
       .join(" | ");
 
-    logLead({ sessionId: sessionId || "unknown", name, email, context: fullContext, ip: req.ip });
+    // If the visitor gave only LinkedIn, there is no email to reply to, so use
+    // your own address as the reply address and show the LinkedIn link in the name line.
+    const ownAddress = process.env.NOTIFY_EMAIL || process.env.GMAIL_USER || "";
+    const emailForMail = email || ownAddress;
+    const nameForMail = email ? name : `${name} (contact on LinkedIn: ${linkedin})`;
+
+    logLead({ sessionId: sessionId || "unknown", name, email: email || linkedin, context: fullContext, ip: req.ip });
     try {
-      await sendLeadEmail({ name, email, context: fullContext });
+      await sendLeadEmail({ name: nameForMail, email: emailForMail, context: fullContext });
     } catch (mailErr) {
       console.error("Email send failed:", mailErr.message);
       return res.json({

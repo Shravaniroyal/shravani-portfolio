@@ -1,16 +1,21 @@
 import React, { useEffect, useRef, useState } from "react";
 
 const API = import.meta.env.VITE_API_URL || "";
-const CONTACT_RE =
-  /\b(talk to (your )?(owner|creator|her)|contact (you|her)|reach (you|her)|get (her |you )?in touch|in touch with (her|you)|(how|can|could) (do |can |could |to )?(i|we) (contact|reach|message|email|meet|talk to)|connect (me )?(with|to) (you|her)|hire (her|you)|speak (to|with) (her|you)|email her|her email|her contact)\b/i;
+// Words that mean "get in touch" (typo tolerant: conntact, conncet, msg ...)
+const CONTACT_VERB_RE =
+  /\b(con+tact|con+ec?t|conn?c+e?t|reach|messag\w*|msg|ping|meet|call|hire|hiring|talk|speak|e-?mail|mail|in touch|get back|pass (a |my |the )?(msg|message)|tell her|let her know|inform her|notify|forward)\b/i;
+const CONTACT_TARGET_RE = /\b(her|she|shravani|owner|creator|you)\b/i;
+const EMAIL_ASK_RE = /\b(what'?s|what is|give me|share|show)\b.*\b(her |your )?(email|mail id|email id|address)\b/i;
 const BYE_RE =
   /\b(bye|goodbye|see you|see ya|gotta go|have to go|that'?s all|that is all|thanks a lot|thank you so much|thanks,? bye|ok thanks|okay thanks|thank you)\b/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const LINKEDIN_RE = /linkedin\.com\/|^https?:\/\/|^(in\/|@)[\w-]+/i;
 
 // "why should we hire her?" is a question to answer, not a request to contact her
 const WHY_RE = /\b(why|should|reasons?|worth|good fit|what makes)\b/i;
 function wantsContact(text) {
-  return CONTACT_RE.test(text) && !WHY_RE.test(text);
+  if (EMAIL_ASK_RE.test(text)) return false; // just asking for the address: answer normally
+  return CONTACT_VERB_RE.test(text) && CONTACT_TARGET_RE.test(text) && !WHY_RE.test(text);
 }
 
 function guessPurpose(text) {
@@ -72,7 +77,7 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown, incoming 
     }
   }
 
-  async function sendLead(name, email) {
+  async function sendLead(name, { email = "", linkedin = "" }) {
     const chatContext = messages
       .slice(-8)
       .map((m) => (m.role === "user" ? "Visitor: " : "Bot: ") + m.content)
@@ -87,6 +92,7 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown, incoming 
           sessionId: sessionId.current,
           name,
           email,
+          linkedin,
           purpose,
           company,
           context,
@@ -147,20 +153,22 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown, incoming 
         { role: "user", content: text },
         {
           role: "assistant",
-          content: `Nice to meet you, ${text}! What's the best email for her to reach you at?`,
+          content: `Nice to meet you, ${text}! What's the best way for her to reach you: your email address or your LinkedIn profile link?`,
         },
       ]);
       return;
     }
     if (stage === "ask_email") {
       setMessages((m) => [...m, { role: "user", content: text }]);
-      if (!EMAIL_RE.test(text)) {
-        addBot("Hmm, that email doesn't look right. Could you type it again?");
+      const isEmail = EMAIL_RE.test(text);
+      const isLinkedIn = !isEmail && LINKEDIN_RE.test(text);
+      if (!isEmail && !isLinkedIn) {
+        addBot("Hmm, I couldn't read that. Please type your email address (like name@example.com) or paste your LinkedIn profile link.");
         return;
       }
       setStage("chat");
       addBot("Perfect, sending that over now... 📬");
-      await sendLead(leadName, text);
+      await sendLead(leadName, isEmail ? { email: text } : { linkedin: text });
       addBot(
         "Done! Your message has been sent, and Shravani will contact you within 24 hours. Anything else you want to know?"
       );
@@ -258,7 +266,7 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown, incoming 
               : stage === "ask_name"
               ? "Your name..."
               : stage === "ask_email"
-              ? "Your email..."
+              ? "Your email or LinkedIn link..."
               : "Ask away..."
           }
           autoComplete="off"
