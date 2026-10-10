@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import Nav from "./components/Nav.jsx";
 import ChatPanel from "./components/ChatPanel.jsx";
@@ -8,12 +8,28 @@ import ProjectDetail from "./pages/ProjectDetail.jsx";
 // Scrolls to #hash targets after route changes (e.g. "/#projects" from a detail page).
 function ScrollToHash() {
   const { pathname, hash } = useLocation();
+  const firstLoad = useRef(true);
+
+  // Don't let the browser jump back to an old scroll position on refresh
   useEffect(() => {
-    if (!hash) {
+    if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
+  }, []);
+
+  useEffect(() => {
+    // On the first load or a refresh, always start at the top (the intro section),
+    // even if the address still ends with #projects from an earlier click.
+    if (firstLoad.current) {
+      firstLoad.current = false;
+      if (window.location.hash) window.history.replaceState(null, "", window.location.pathname + window.location.search);
       window.scrollTo(0, 0);
       return;
     }
-    const id = hash.slice(1);
+    const current = window.location.hash; // read live, so a stripped hash stays stripped
+    if (!current) {
+      window.scrollTo(0, 0);
+      return;
+    }
+    const id = current.slice(1);
     const t = setTimeout(() => document.getElementById(id)?.scrollIntoView(), 0);
     return () => clearTimeout(t);
   }, [pathname, hash]);
