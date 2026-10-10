@@ -72,7 +72,7 @@ export default function ProjectDetail() {
         note="Plans for taking this project to the next level. These are not features that exist today."
       />
       <Section
-        title="How it could serve government and public institutions"
+        title={detail.governmentTitle || "How it could serve government and public institutions"}
         items={detail.government}
         note="If the project succeeds and is properly validated. These are possibilities, not current deployments."
       />

@@ -100,17 +100,6 @@ export const PROJECTS = [
         { label: "Published", value: "JETIR, Vol. 11, Issue 12, 2024" },
         { label: "Evaluation", value: "PSNR (quality) and BER (robustness)" },
       ],
-      future: [
-        "Train and test on larger public fingerprint and iris datasets, and report the accuracy and error rates in full.",
-        "Make it faster: the report notes computational overhead, so optimise the encryption and the CNN for low-power devices.",
-        "Move storage to a protected cloud database with proper key management, and test the system against deliberate attacks.",
-        "Add more biometric traits, such as face, and offer a mobile app for enrolment and verification.",
-      ],
-      government: [
-        "Protecting stored biometric templates: identity and e-governance systems keep large biometric databases, and a scheme that does not alter the stored image and encrypts the identifier could make leaks less harmful.",
-        "Possible uses: secure authentication for citizen-service portals, protecting biometric records held by public offices, and tamper checks on identity images shared between departments.",
-        "Anything used for national identity would need independent security testing and certification first.",
-      ],
       notes: [
         "Reported outcome: unique master shares per image and resilience against common image-processing attacks.",
         "Limitations noted in the report: computational overhead, dependence on input image quality, and scalability for large user volumes.",
@@ -149,18 +138,6 @@ export const PROJECTS = [
         { label: "Logistic Regression", value: "84.0%" },
         { label: "KNN", value: "82.7%" },
         { label: "SVM", value: "79.3%" },
-      ],
-      future: [
-        "Forecast over time: add time-series models, such as LSTM or gradient boosting on lagged traffic counts, to predict congestion days or weeks ahead.",
-        "Live data: connect to regularly updated orbital feeds so predictions refresh as new satellites launch.",
-        "Visualisation: heatmaps and 3D orbit views that show which altitude bands are filling up.",
-        "Alerts: warn operators when a region is predicted to become crowded, before conjunction warnings appear.",
-      ],
-      government: [
-        "Space situational awareness: national space agencies could use density forecasts to plan launch windows and choose safer orbital slots.",
-        "Policy support: regulators could use data-backed congestion trends when setting rules on satellite deployment and end-of-life disposal.",
-        "Possible users: space agencies, defence and civil planners, and satellite operators working with government programmes.",
-        "It would need validation on real operational data before anyone relies on it for decisions.",
       ],
       notes: [
         "Completed as part of the AI Data Quality Analyst internship (NCVET-recognised, Skill India), graded A.",
@@ -204,6 +181,7 @@ export const PROJECTS = [
         "Protect patient privacy: explore training that keeps data inside each hospital, such as federated learning, so scans do not have to be sent out.",
         "Clinical approval: seek the regulatory approvals needed for medical software before any clinical use.",
       ],
+      governmentTitle: "How it helps people and public healthcare",
       government: [
         "Screening where specialists are scarce: district hospitals and primary health centres could use it to flag scans for urgent review, with results sent to a remote radiologist.",
         "Public health programmes: it could support national digital health efforts and telemedicine services, helping to prioritise patients and shorten waiting times.",
@@ -245,17 +223,6 @@ export const PROJECTS = [
         { label: "Agents", value: "4" },
         { label: "Exchanges", value: "NSE, BSE, NYSE, NASDAQ" },
         { label: "Forecast window", value: "30 days" },
-      ],
-      future: [
-        "Test it properly: backtest suggestions against past prices and report how often they were right.",
-        "Add more agents, such as company fundamentals, sector and macro-economic conditions, and risk.",
-        "Show sources: link every claim to the news or data it came from, so users can check it.",
-        "Add portfolio views, alerts and a web dashboard.",
-      ],
-      government: [
-        "Investor education: it could be adapted into a teaching tool for financial-literacy programmes, showing how data and news feed into an investment view.",
-        "Market awareness: regulators and exchanges could study aggregated sentiment patterns, for example to spot unusual hype around a stock.",
-        "Any public use would need strong safeguards, because a wrong suggestion has real financial consequences.",
       ],
       notes: [
         "An educational project. Its output is not financial advice.",
