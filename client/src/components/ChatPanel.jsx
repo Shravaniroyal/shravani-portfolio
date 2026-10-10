@@ -4,6 +4,7 @@ const API = import.meta.env.VITE_API_URL || "";
 // Words that mean "get in touch" (typo tolerant: conntact, conncet, msg ...)
 const CONTACT_VERB_RE =
   /\b(con+tact|con+ec?t|conn?c+e?t|reach|messag\w*|msg|ping|meet|call|hire|hiring|talk|speak|e-?mail|mail|in touch|get back|pass (a |my |the )?(msg|message)|tell her|let her know|inform her|notify|forward)\b/i;
+const CONTACT_STRICT_RE = /\b(con+tact|con+ec?t|conn?c+e?t|reach|e-?mail|hire|hiring|in touch|get back)\b|\b(general|just) (talk|chat|hello|hi)\b/i;
 const CONTACT_TARGET_RE = /\b(her|she|shravani|owner|creator|you)\b/i;
 const EMAIL_ASK_RE = /\b(what'?s|what is|give me|share|show)\b.*\b(her |your )?(email|mail id|email id|address)\b/i;
 const BYE_RE =
@@ -13,10 +14,21 @@ const LINKEDIN_RE = /linkedin\.com\/|^https?:\/\/|^(in\/|@)[\w-]+/i;
 
 // "why should we hire her?" is a question to answer, not a request to contact her
 const WHY_RE = /\b(why|should|reasons?|worth|good fit|what makes)\b/i;
+// "I want to contact / talk / connect" counts even without saying "her"
+const FIRST_PERSON_RE = /\b(i|we)\b.{0,25}\b(want|wanna|need|would like|like|wish|plan|am here|came|interested)\b|\b(want|wanna|need) to\b|\bjust (a )?(hello|hi)\b|\bgeneral (talk|chat|inquiry|enquiry|query)\b/i;
 function wantsContact(text) {
   if (EMAIL_ASK_RE.test(text)) return false; // just asking for the address: answer normally
-  return CONTACT_VERB_RE.test(text) && CONTACT_TARGET_RE.test(text) && !WHY_RE.test(text);
+  if (WHY_RE.test(text)) return false;
+  if (!CONTACT_VERB_RE.test(text)) return false;
+  if (CONTACT_TARGET_RE.test(text)) return true;
+  // no "her"/"you": only the clear get-in-touch words count, so "I like to talk about AI" stays a normal chat
+  return CONTACT_STRICT_RE.test(text) && FIRST_PERSON_RE.test(text);
 }
+
+// Safety net: if the AI starts running its own contact process (asking for a name or
+// a message to "forward"), the app's real flow takes over, because only that flow sends the email.
+const BOT_IMPROV_RE =
+  /\b(your name|what('s| is) your name|short note|forward (it|that|your|this|to)|pass (it|that|this) (on|along)|(send|passing) (it|her|that) (over|along|on)|i'?ll (send|forward|pass|let her)|let her know)\b/i;
 
 function guessPurpose(text) {
   if (/intern/i.test(text)) return "Internship opportunity";
@@ -215,6 +227,10 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown, incoming 
       const reply = await callChat(
         nextMessages.map((m) => ({ role: m.role, content: m.content }))
       );
+      if (BOT_IMPROV_RE.test(reply)) {
+        startContactFlow();
+        return;
+      }
       setMessages((m) => [...m, { role: "assistant", content: reply }]);
       if (BYE_RE.test(text)) {
         onFarewellTriggered && onFarewellTriggered();
