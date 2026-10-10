@@ -83,7 +83,7 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown, incoming 
       .map((m) => (m.role === "user" ? "Visitor: " : "Bot: ") + m.content)
       .join("\n");
     const context =
-      `Purpose: ${purpose}\nCompany: ${company}\n\nRecent chat:\n` + chatContext;
+      `Purpose: ${purpose}\n${company ? `Company: ${company}\n` : ""}\nRecent chat:\n` + chatContext;
     try {
       await fetch(`${API}/api/lead`, {
         method: "POST",
@@ -112,11 +112,17 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown, incoming 
 
   function choosePurpose(label) {
     setPurpose(label);
-    setStage("ask_company");
+    setCompany("");
+    // General inquiries don't need a company, so go straight to the name
+    const general = label === "General inquiry";
+    setStage(general ? "ask_name" : "ask_company");
     setMessages((m) => [
       ...m,
       { role: "user", content: label },
-      { role: "assistant", content: "Great! Which company are you from?" },
+      {
+        role: "assistant",
+        content: general ? "Great! What's your name?" : "Great! Which company are you from?",
+      },
     ]);
   }
 
