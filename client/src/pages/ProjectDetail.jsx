@@ -2,6 +2,19 @@ import React, { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { findProject } from "../data/projects.js";
 
+function Section({ title, items, note }) {
+  if (!items || items.length === 0) return null;
+  return (
+    <>
+      <h2 className="detail-h script">{title}</h2>
+      {note && <p className="muted">{note}</p>}
+      <ul className="detail-list">
+        {items.map((a, i) => <li key={i} className="prose">{a}</li>)}
+      </ul>
+    </>
+  );
+}
+
 export default function ProjectDetail() {
   const { slug } = useParams();
   const project = findProject(slug);
@@ -36,15 +49,13 @@ export default function ProjectDetail() {
         {project.tech.map((t) => <span key={t} className="chip chip-sm">{t}</span>)}
       </div>
 
-      <h2 className="detail-h">The problem</h2>
+      <h2 className="detail-h script">The problem</h2>
       <p className="prose">{detail.problem}</p>
 
-      <h2 className="detail-h">How it works</h2>
-      <ul className="detail-list">
-        {detail.approach.map((a, i) => <li key={i} className="prose">{a}</li>)}
-      </ul>
+      <Section title="How it was built" items={detail.build} />
+      <Section title="Key design choices" items={detail.approach} />
 
-      <h2 className="detail-h">Results</h2>
+      <h2 className="detail-h script">Results</h2>
       <dl className="detail-results">
         {detail.results.map((r) => (
           <div key={r.label} className="detail-result">
@@ -54,14 +65,17 @@ export default function ProjectDetail() {
         ))}
       </dl>
 
-      {detail.notes?.length > 0 && (
-        <>
-          <h2 className="detail-h">Notes</h2>
-          <ul className="detail-list">
-            {detail.notes.map((n, i) => <li key={i} className="prose">{n}</li>)}
-          </ul>
-        </>
-      )}
+      <Section
+        title="Future development"
+        items={detail.future}
+        note="Plans for taking this project to the next level. These are not features that exist today."
+      />
+      <Section
+        title="How it could serve government and public institutions"
+        items={detail.government}
+        note="If the project succeeds and is properly validated. These are possibilities, not current deployments."
+      />
+      <Section title="Notes" items={detail.notes} />
 
       {project.link && (
         <p>
