@@ -84,10 +84,14 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown, incoming 
       .join("\n");
     const context =
       `Purpose: ${purpose}\n${company ? `Company: ${company}\n` : ""}\nRecent chat:\n` + chatContext;
+    // Returns "sent" (email delivered), "saved" (logged but email failed) or "failed".
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 30000);
     try {
-      await fetch(`${API}/api/lead`, {
+      const res = await fetch(`${API}/api/lead`, {
         method: "POST",
         headers: { "content-type": "application/json" },
+        signal: ctrl.signal,
         body: JSON.stringify({
           sessionId: sessionId.current,
           name,
@@ -98,8 +102,13 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown, incoming 
           context,
         }),
       });
+      if (!res.ok) return "failed";
+      const data = await res.json();
+      return data.emailed ? "sent" : "saved";
     } catch {
-      // still tell the visitor it's handled; the server logs it either way
+      return "failed";
+    } finally {
+      clearTimeout(timer);
     }
   }
 
@@ -174,10 +183,20 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown, incoming 
       }
       setStage("chat");
       addBot("Perfect, sending that over now... 📬");
-      await sendLead(leadName, isEmail ? { email: text } : { linkedin: text });
-      addBot(
-        "Done! Your message has been sent, and Shravani will contact you within 24 hours. Anything else you want to know?"
-      );
+      const result = await sendLead(leadName, isEmail ? { email: text } : { linkedin: text });
+      if (result === "sent") {
+        addBot(
+          "✅ Done! Your message has been sent to Shravani, and she will contact you within 24 hours. Anything else you want to know?"
+        );
+      } else if (result === "saved") {
+        addBot(
+          "I saved your details, but the email didn't go through on my side. To be safe, please also write to her directly at rsshravani04@gmail.com. Sorry about that!"
+        );
+      } else {
+        addBot(
+          "Sorry, I couldn't send that just now. Please try again in a minute, or email her directly at rsshravani04@gmail.com."
+        );
+      }
       return;
     }
 

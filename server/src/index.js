@@ -88,7 +88,11 @@ app.post("/api/lead", async (req, res) => {
 
     logLead({ sessionId: sessionId || "unknown", name, email: email || linkedin, context: fullContext, ip: req.ip });
     try {
-      await sendLeadEmail({ name: nameForMail, email: emailForMail, context: fullContext });
+      // Don't let a stuck email connection hang the visitor's chat forever
+      await Promise.race([
+        sendLeadEmail({ name: nameForMail, email: emailForMail, context: fullContext }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("email timed out after 20s")), 20000)),
+      ]);
     } catch (mailErr) {
       console.error("Email send failed:", mailErr.message);
       return res.json({
