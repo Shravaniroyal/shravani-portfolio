@@ -65,6 +65,7 @@ export default function ProjectDetail() {
         ))}
       </dl>
 
+      <Section title="Accuracy and how to verify it" items={detail.verify} />
       <Section
         title="Future development"
         items={detail.future}
