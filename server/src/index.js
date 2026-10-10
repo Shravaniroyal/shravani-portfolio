@@ -15,11 +15,33 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
-app.use(cors());
-app.use(express.json());
+// Render sits behind a proxy, so this makes req.ip the visitor's real address
+app.set("trust proxy", 1);
+
+// CORS: set CLIENT_ORIGIN on Render to your Vercel URL (comma-separate several).
+// Locally (variable not set) any origin is allowed so dev keeps working.
+const allowed = (process.env.CLIENT_ORIGIN || "")
+  .split(",")
+  .map((s) => s.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin(origin, cb) {
+      if (!origin || allowed.length === 0 || allowed.includes(origin)) {
+        return cb(null, true);
+      }
+      return cb(new Error("Not allowed by CORS"));
+    },
+  })
+);
+app.use(express.json({ limit: "100kb" }));
 app.use(express.static(path.join(__dirname, "..", "public")));
 
-// --- Chat endpoint: the frontend sends the running conversation, gets a reply back ---
+// Health check (also useful for waking the free Render server)
+app.get("/api/health", (req, res) => res.json({ ok: true }));
+
+// --- Chat endpoint ---
 app.post("/api/chat", async (req, res) => {
   try {
     const { history, sessionId } = req.body;
@@ -41,23 +63,31 @@ app.post("/api/chat", async (req, res) => {
   }
 });
 
-// --- Lead endpoint: visitor gave their name + email wanting contact ---
+// --- Lead endpoint ---
 app.post("/api/lead", async (req, res) => {
   try {
-    const { sessionId, name, email, context } = req.body;
+    const { sessionId, name, email, context, purpose, company } = req.body;
     if (!name || !email) {
       return res.status(400).json({ error: "name and email are required" });
     }
-    logLead({ sessionId: sessionId || "unknown", name, email, context, ip: req.ip });
+    // Keep purpose and company in the saved lead and the email
+    const fullContext = [
+      purpose ? `Purpose: ${purpose}` : "",
+      company ? `Company: ${company}` : "",
+      context || "",
+    ]
+      .filter(Boolean)
+      .join(" | ");
+
+    logLead({ sessionId: sessionId || "unknown", name, email, context: fullContext, ip: req.ip });
     try {
-      await sendLeadEmail({ name, email, context });
+      await sendLeadEmail({ name, email, context: fullContext });
     } catch (mailErr) {
-      // Log the lead either way, but tell the truth about the email failing
       console.error("Email send failed:", mailErr.message);
       return res.json({
         ok: true,
         emailed: false,
-        note: "Lead was logged, but the notification email failed to send. Check server/.env Gmail settings.",
+        note: "Lead was logged, but the notification email failed to send. Check the email settings.",
       });
     }
     res.json({ ok: true, emailed: true });
@@ -67,7 +97,7 @@ app.post("/api/lead", async (req, res) => {
   }
 });
 
-// --- Admin: read-only view of all conversations and leads, passcode-protected ---
+// --- Admin (passcode-protected) ---
 function checkPasscode(req, res, next) {
   const provided = req.query.key || req.headers["x-admin-key"];
   if (!process.env.ADMIN_PASSCODE || provided !== process.env.ADMIN_PASSCODE) {
@@ -86,6 +116,5 @@ app.get("/api/admin/leads", checkPasscode, (req, res) => {
 
 const PORT = process.env.PORT || 8787;
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-  console.log(`Admin log viewer: http://localhost:${PORT}/admin.html`);
+  console.log(`Server running on port ${PORT}`);
 });
