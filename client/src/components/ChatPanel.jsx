@@ -30,6 +30,19 @@ function wantsContact(text) {
 const BOT_IMPROV_RE =
   /\b(your name|what('s| is) your name|short note|forward (it|that|your|this|to)|pass (it|that|this) (on|along)|(send|passing) (it|her|that) (over|along|on)|i'?ll (send|forward|pass|let her)|let her know)\b/i;
 
+// Tidies the AI's reply before showing it: no page paths, no markdown stars, no "Phase 2".
+function cleanReply(text) {
+  let t = String(text || "");
+  // drop any sentence that points to a page path or says "check the details here"
+  t = t
+    .split(/(?<=[.!?])\s+/)
+    .filter((sentence) => !/\/projects\/|\/#|check (out )?(the )?(full )?details|details here|see more here/i.test(sentence))
+    .join(" ");
+  t = t.replace(/\*\*(.*?)\*\*/g, "$1").replace(/__(.*?)__/g, "$1").replace(/^#+\s*/gm, "");
+  t = t.replace(/\bPhase\s*\d+\s*/gi, "");
+  return t.trim() || "Happy to tell you more. What would you like to know?";
+}
+
 function guessPurpose(text) {
   if (/intern/i.test(text)) return "Internship opportunity";
   if (/job|hire|hiring|full.?time|role|position|opening/i.test(text)) return "Job opportunity";
@@ -231,7 +244,7 @@ export default function ChatPanel({ onFarewellTriggered, onGreetShown, incoming 
         startContactFlow();
         return;
       }
-      setMessages((m) => [...m, { role: "assistant", content: reply }]);
+      setMessages((m) => [...m, { role: "assistant", content: cleanReply(reply) }]);
       if (BYE_RE.test(text)) {
         onFarewellTriggered && onFarewellTriggered();
       }
