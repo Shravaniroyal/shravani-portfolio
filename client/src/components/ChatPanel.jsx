@@ -40,6 +40,8 @@ function cleanReply(text) {
     .join(" ");
   t = t.replace(/\*\*(.*?)\*\*/g, "$1").replace(/__(.*?)__/g, "$1").replace(/^#+\s*/gm, "");
   t = t.replace(/\bPhase\s*\d+\s*/gi, "");
+  // tidy odd characters the model sometimes uses: "98.18 %" -> "98.18%", non-breaking hyphens and spaces
+  t = t.replace(/[\u2010\u2011\u2012\u2013]/g, "-").replace(/[\u00a0\u202f\u2009]/g, " ").replace(/(\d)\s+%/g, "$1%");
   return t.trim() || "Happy to tell you more. What would you like to know?";
 }
 
