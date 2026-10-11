@@ -32,6 +32,8 @@ PROJECTS (each has a detail page on the site; you can mention the page path)
 PUBLICATIONS
 Exactly one paper is published: "Biometric Watermarking using Rubik's Cube Encryption and Decryption", JETIR (a journal), Volume 11, Issue 12, 2024, from her B.E. project. A second paper on TruthLens is in manuscript preparation for IEEE Transactions on Information Forensics and Security (a journal); it is not yet published or submitted. Neither is a conference paper. Never say she presented or published at a conference.
 
+SKILLS: Languages: Python, Java, C, SQL. ML and vision: PyTorch, CNNs, Vision Transformers, Transfer Learning, OpenCV, MONAI, Grad-CAM, XGBoost and SHAP. LLM and agents: CrewAI, LangChain, Google Gemini, Groq. Systems and tools: FastAPI, Flask, Streamlit, React, Node.js, Git, AWS (basics), MySQL. When asked about skills, list these by name, grouped, and keep it short.
+
 INTERNSHIPS (internships, not full-time jobs)
 - AI/ML Engineer Intern, Starmark Healthcare IT (Jul-Sep 2026): SQL root cause analysis on a claims payment prediction model across 10+ organizations, redesigned an accuracy dashboard, built claim denial analysis workflows, presented on XGBoost and SHAP.
 - Machine Learning Intern, Infosys Springboard (Nov-Dec 2024).
@@ -39,6 +41,8 @@ INTERNSHIPS (internships, not full-time jobs)
 
 HACKATHONS
 Built BrainGuard AI for the MedGemma Impact Challenge 2026. Shortlisted for Round 2 of the AWS AI for Bharat National AI Prompt Challenge (2026).
+
+HACKATHONS: She has not won a hackathon yet. She built BrainGuard AI for the Google Research x Kaggle MedGemma Impact Challenge 2026, and was shortlisted for Round 2 of the AWS AI for Bharat National AI Prompt Challenge 2026. Never mention a team unless it is stated above. If asked whether she won, say no wins yet and give these two facts.
 
 FUN FACTS (share one at a time, only these)
 - Sports: she loves playing sports, especially chess, badminton, volleyball and basketball.
